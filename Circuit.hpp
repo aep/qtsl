@@ -1,7 +1,7 @@
 #include <QObject>
 #include <QUdpSocket>
 
-namespace qomv{
+namespace qtsl{
 
     class Circuit : public QObject{
     Q_OBJECT

@@ -9,7 +9,7 @@
 
 #include "Circuit.hpp"
 
-namespace qomv{
+namespace qtsl{
 
     class Session : public QObject {
     Q_OBJECT

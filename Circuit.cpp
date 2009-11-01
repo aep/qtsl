@@ -1,8 +1,8 @@
 #include "Circuit.hpp"
-
+#include "udp/pkg.hpp"
 #include <QDebug>
 
-using namespace qomv;
+using namespace qtsl;
 
 Circuit::Circuit(QObject * parent)
  :QObject(parent){
@@ -25,7 +25,8 @@ void Circuit::socketReadyRead(){
 void Circuit::socketStateChanged ( QAbstractSocket::SocketState socketState){
     qDebug()<<socketState;
     if(socketState== QAbstractSocket::ConnectedState){
-        socket.write("HILOL\n\n");
+        
+        sendMessage();
     }
 }
 

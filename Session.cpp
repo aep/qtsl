@@ -7,7 +7,7 @@
 #include <QCoreApplication>
 #include <QDebug>
 
-using namespace qomv;
+using namespace qtsl;
 
 Session::Session(QObject * parent)
  :QObject(parent)
