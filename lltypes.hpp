@@ -127,12 +127,36 @@ namespace lltypes{
         return in>>o.x>>o.y>>o.z;
     }
 
-    typedef QUuid LLUUID;
+
+    class LLUUID : public  QUuid {
+    public:
+        LLUUID():QUuid(){
+        }
+        LLUUID( const QUuid& other):QUuid(other){
+        }
+    };
+    inline QDataStream & operator<< (QDataStream& out, const LLUUID& o){
+        QDataStream::ByteOrder order=out.byteOrder ();
+        out.setByteOrder(QDataStream::BigEndian);
+        out<<(QUuid&)o;
+        out.setByteOrder(order);
+        return out;
+    };
+    inline QDataStream & operator>> (QDataStream& in, LLUUID& o){
+        QDataStream::ByteOrder order=in.byteOrder ();
+        in.setByteOrder(QDataStream::BigEndian);
+        in>>(QUuid&)o;
+        in.setByteOrder(order);
+        return in;
+    };
+
+
 
     class IPADDR : public QHostAddress {
     };
     inline QDataStream & operator<< (QDataStream& out, const IPADDR& o){
-        return out<<o.toIPv4Address();
+        out<<o.toIPv4Address();
+        return out;
     }
     inline QDataStream & operator>> (QDataStream& in, IPADDR& o){
         quint32 a;

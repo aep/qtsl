@@ -4,20 +4,11 @@
 #include <QObject>
 #include <QUdpSocket>
 #include <QUuid>
+#include <QMap>
+
+#include "udp/pkg.hpp"
 
 namespace qtsl{
-    namespace udp{
-        struct UdpMessage;
-
-        #ifndef QTSL_UDP_PKG_H
-        enum IdByte{
-            Low,
-            High,
-            Medium,
-            Fixed
-        };
-        #endif
-    };
 
     enum MessageFlags{
         NoMessageFlags = 0x0,
@@ -39,9 +30,8 @@ namespace qtsl{
 
         void connect(QString host,int port,quint32 circuit_code, QUuid session_id);
 
-
         template <typename M>
-        void sendMessage(const M & message,MessageFlags flags){
+        void sendMessage(const M & message,bool reliable=true){
             QByteArray d;
             QDataStream s(&d,QIODevice::WriteOnly);
             if(M::byte==udp::Low){
@@ -59,10 +49,10 @@ namespace qtsl{
                 s<<(quint32)M::id;
             }
             s<<message;
-            sendMessageData(d,flags);
+            sendMessageData(d,reliable);
         }
 
-        void sendMessageData(const QByteArray & message,MessageFlags flags);
+        void sendMessageData(const QByteArray & message,bool reliable=true, quint32 resendSeq=0);
 
     signals:
         void connected();
@@ -78,6 +68,16 @@ namespace qtsl{
         QString port;
         quint32 circuit_code;
         QUuid session_id;
+
+        quint64 sequenceOut;
+
+        struct QueuedMessage{
+            QByteArray payload;
+            quint8 iterationsStuck;
+        };
+        QMap <quint32,QueuedMessage*> queue;
+        virtual void timerEvent ( QTimerEvent * event );
+        int timerId;
     };
 };
 
