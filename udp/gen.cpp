@@ -84,6 +84,7 @@ void gen(QList<Message> & ml,QByteArray  outh, QByteArray outcpp)
 
         oh<<"QDataStream &operator<<(QDataStream & out, const "<< m.name<<"Message & o);\r\n";
         op<<"QDataStream &qtsl::udp::operator<<(QDataStream & out, const "<< m.name<<"Message & o) {\r\n";
+        op<<"    out.setByteOrder(QDataStream::LittleEndian);\r\n";
         foreach(Block b,m.blocks){
             if(b.repeat==Single){
                 foreach(Member e,b.members){
@@ -107,12 +108,14 @@ void gen(QList<Message> & ml,QByteArray  outh, QByteArray outcpp)
             }
             op<<"\r\n";
         }
+        op<<"    out.setByteOrder(QDataStream::BigEndian);\r\n";
         op<<"    return out;\r\n";
         op<<"}\r\n";
 
 
         oh<<"QDataStream &operator>>(QDataStream & in,  "<< m.name<<"Message & o);";
         op<<"QDataStream &qtsl::udp::operator>>(QDataStream & in,  "<< m.name<<"Message & o) {\r\n";
+        op<<"    in.setByteOrder(QDataStream::LittleEndian);\r\n";
         foreach(Block b,m.blocks){
             if(b.repeat==Single){
                 foreach(Member e,b.members){
@@ -139,8 +142,9 @@ void gen(QList<Message> & ml,QByteArray  outh, QByteArray outcpp)
             }
             op<<"\r\n";
         }
-        op  <<"    return in;\r\n";
-        op  <<  "}\r\n";
+        op<<"    in.setByteOrder(QDataStream::BigEndian);\r\n";
+        op<<"    return in;\r\n";
+        op<<  "}\r\n";
         op<<"\r\n\r\n";
         oh<<"\r\n\r\n";
     }

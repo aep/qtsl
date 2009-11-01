@@ -6,6 +6,7 @@
 #include <QStringList>
 #include <QCoreApplication>
 #include <QDebug>
+#include "udp/pkg.hpp"
 
 using namespace qtsl;
 
