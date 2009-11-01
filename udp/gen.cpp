@@ -24,34 +24,42 @@ void gen(QList<Message> & ml,QByteArray  outh, QByteArray outcpp)
     op<<"using namespace qtsl;\r\n";
     op<<"using namespace udp;\r\n\r\n";
 
-    oh<<"#ifndef QTSL_UDP_PKG_H\r\n";
-    oh<<"#define QTSL_UDP_PKG_H\r\n";
-    oh<<"#include <QVector>\r\n";
-    oh<<"#include <QDataStream>\r\n";
-    oh<<"#include \"lltypes.hpp\"\r\n";
-    oh<<"namespace qtsl{\r\n";
-    oh<<"namespace udp{\r\n\r\n";
+    oh<<"#ifndef QTSL_UDP_PKG_H\r\n"
+      <<"#define QTSL_UDP_PKG_H\r\n"
+      <<"#include <QVector>\r\n"
+      <<"#include <QDataStream>\r\n"
+      <<"#include \"lltypes.hpp\"\r\n"
+      <<"namespace qtsl{\r\n"
+      <<"namespace udp{\r\n\r\n"
+      <<"enum IdByte{\r\n"
+      <<"    Low,\r\n"
+      <<"    High,\r\n"
+      <<"    Medium,\r\n"
+      <<"    Fixed\r\n"
+      <<"};\r\n\r\n"
+      <<"struct UdpMessage{\r\n"
+      <<"};\r\n\r\n";
 
     foreach(Message  m, ml){
-        oh<<"struct "<<m.name<<" : UdpMessage {\r\n";
+        oh<<"struct "<<m.name<<"Message : UdpMessage {\r\n";
 
-        oh<<"    static quint32 id="<<m.id<<";\r\n";
-        oh<<"    static IdByte byte="<<m.byte<<";\r\n\r\n";
+        oh<<"    static const quint32 id="<<m.id<<"U;\r\n";
+        oh<<"    static const IdByte byte="<<m.byte<<";\r\n\r\n";
 
         //Ctor
-        oh<<"    "<<m.name<<" ();\r\n\r\n";
-        op<<m.name<<" (){\r\n";
+        oh<<"    "<<m.name<<"Message ();\r\n\r\n";
+        op<<m.name<<"Message::"<<m.name<<"Message (){\r\n";
         foreach(Block b,m.blocks){
             if(b.repeat==Multiple){
                 op<<"    for(int i=0;i<"<<b.times<<";i++)\r\n";
-                op<<"        "<<b.name<<"<< "<<b.name<<"Type();\r\n";
+                op<<"        "<<b.name<<"<< "<<b.name<<"Block();\r\n";
             }
         }
         op<<"}\r\n\r\n";
 
         //Blocks
         foreach(Block b,m.blocks){
-            oh<<"    struct "<<b.name<<"Type {\r\n";
+            oh<<"    struct "<<b.name<<"Block {\r\n";
             foreach(Member e,b.members){
                 oh<<"        "<<cpptype(e)<<" "<<e.name<<";\r\n";
             }
@@ -62,20 +70,20 @@ void gen(QList<Message> & ml,QByteArray  outh, QByteArray outcpp)
         //Blocks
         foreach(Block b,m.blocks){
             if(b.repeat==Single){
-                oh<<"    "<<b.name<<"Type "<<b.name<<";\r\n";
+                oh<<"    "<<b.name<<"Block "<<b.name<<";\r\n";
             }
             else if(b.repeat==Multiple){
-                oh<<"    QVector<"<<b.name<<"Type> "<<b.name<<";\r\n";
+                oh<<"    QVector<"<<b.name<<"Block> "<<b.name<<";\r\n";
             }
             else if(b.repeat==Variable){
-                oh<<"    QVector<"<<b.name<<"Type> "<<b.name<<";\r\n";
+                oh<<"    QVector<"<<b.name<<"Block> "<<b.name<<";\r\n";
             }
         }
 
-        oh<<"}\r\n\r\n";
+        oh<<"};\r\n\r\n";
 
-        oh<<"QDataStream &operator<<(QDataStream & out, const "<< m.name<<" & o);\r\n";
-        op<<"QDataStream &operator<<(QDataStream & out, const "<< m.name<<" & o) {\r\n";
+        oh<<"QDataStream &operator<<(QDataStream & out, const "<< m.name<<"Message & o);\r\n";
+        op<<"QDataStream &operator<<(QDataStream & out, const "<< m.name<<"Message & o) {\r\n";
         foreach(Block b,m.blocks){
             if(b.repeat==Single){
                 foreach(Member e,b.members){
@@ -103,8 +111,8 @@ void gen(QList<Message> & ml,QByteArray  outh, QByteArray outcpp)
         op<<"}\r\n";
 
 
-        oh<<"QDataStream &operator>>(QDataStream & in,  "<< m.name<<" & o);";
-        op<<"QDataStream &operator>>(QDataStream & in,  "<< m.name<<" & o) {\r\n";
+        oh<<"QDataStream &operator>>(QDataStream & in,  "<< m.name<<"Message & o);";
+        op<<"QDataStream &operator>>(QDataStream & in,  "<< m.name<<"Message & o) {\r\n";
         foreach(Block b,m.blocks){
             if(b.repeat==Single){
                 foreach(Member e,b.members){
@@ -122,7 +130,7 @@ void gen(QList<Message> & ml,QByteArray  outh, QByteArray outcpp)
                 op<<"    o."<<b.name<<".clear();\r\n";
                 op<<"    lltypes::U8 count"<<b.name<<";\r\n    in >> count"<<b.name<<";\r\n";
                 op<<"    for(int i=0;i<count"<<b.name<<";i++){\r\n";
-                op<<"        "<<m.name<<"::"<<b.name<<"Type y;\r\n";
+                op<<"        "<<m.name<<"Message::"<<b.name<<"Block y;\r\n";
                 foreach(Member e,b.members){
                     op<<"        in >> y."<<e.name<<";\r\n";
                 }
