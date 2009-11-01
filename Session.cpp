@@ -30,6 +30,8 @@ void Session::login(QUrl url, QString firstName, QString lastName, QString passw
 
     rpc.setServiceUrl(url);
 
+    this->authRetryLeft=2;
+
     QVariantMap st;
     st["mac"]="00:00:00:00:00:00";
     st["first"]=firstName;
@@ -74,12 +76,27 @@ void Session::rpcRequestFinished(){
     if(reply->error()==QNetworkReply::NoError){
         QVariantMap r=reply->result().toMap();
 
-        session_id=r["session_id"].toString();
-        agent_id=r["agent_id"].toString();
-        caps["seed_capability"]=r["seed_capability"].toString();
+        if(r["login"].toString()=="false"){
+            m_state=Disconnected;
 
-        m_state=ConnectingCircuit;
-        circuit.connect(r["sim_ip"].toString(),r["sim_port"].toInt(),r["circuit_code"].toString());
+            if((r["reason"].toString()=="presence") && (--authRetryLeft>0)){
+                int authRetryLeft_=authRetryLeft;
+                qDebug("[LOGIN] server claims we are logged in,  try one more time");
+                login(this->url, this->firstName, this->lastName, this->password );
+                authRetryLeft=authRetryLeft_; //login resets it
+            } else {
+                emit disconnected(QNetworkReply::ProxyAuthenticationRequiredError);
+                qDebug("[LOGIN] %s",qPrintable(r["message"].toString()));
+            }
+        } else {
+            qDebug("[LOGIN] success");
+            session_id=r["session_id"].toString();
+            agent_id=r["agent_id"].toString();
+            caps["seed_capability"]=r["seed_capability"].toString();
+
+            m_state=ConnectingCircuit;
+            circuit.connect(r["sim_ip"].toString(),r["sim_port"].toInt(),r["circuit_code"].toUInt(),r["session_id"].toString());
+        }
 
     } else{
         m_state=Disconnected;

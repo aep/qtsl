@@ -40,6 +40,7 @@ namespace qtsl{
         QString lastName;
         QString password;
 
+        int authRetryLeft;
 
         QString session_id;
         QString agent_id;

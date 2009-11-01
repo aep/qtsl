@@ -83,7 +83,7 @@ void gen(QList<Message> & ml,QByteArray  outh, QByteArray outcpp)
         oh<<"};\r\n\r\n";
 
         oh<<"QDataStream &operator<<(QDataStream & out, const "<< m.name<<"Message & o);\r\n";
-        op<<"QDataStream &operator<<(QDataStream & out, const "<< m.name<<"Message & o) {\r\n";
+        op<<"QDataStream &qtsl::udp::operator<<(QDataStream & out, const "<< m.name<<"Message & o) {\r\n";
         foreach(Block b,m.blocks){
             if(b.repeat==Single){
                 foreach(Member e,b.members){
@@ -112,7 +112,7 @@ void gen(QList<Message> & ml,QByteArray  outh, QByteArray outcpp)
 
 
         oh<<"QDataStream &operator>>(QDataStream & in,  "<< m.name<<"Message & o);";
-        op<<"QDataStream &operator>>(QDataStream & in,  "<< m.name<<"Message & o) {\r\n";
+        op<<"QDataStream &qtsl::udp::operator>>(QDataStream & in,  "<< m.name<<"Message & o) {\r\n";
         foreach(Block b,m.blocks){
             if(b.repeat==Single){
                 foreach(Member e,b.members){
