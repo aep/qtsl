@@ -3,9 +3,11 @@
 
 #include <QObject>
 #include <QUrl>
-#include <QNetworkAccessManager>
+#include <QHash>
+#include <QxtXmlRpcClient>
 #include <QNetworkReply>
 
+#include "Circuit.hpp"
 
 namespace qomv{
 
@@ -14,6 +16,7 @@ namespace qomv{
     enum SessionState{
         Disconnected,
         Authenticating,
+        ConnectingCircuit,
         Connected
     };
     public:
@@ -22,25 +25,31 @@ namespace qomv{
         SessionState state() const {return m_state;}
 
     public slots:
-        /**
-           triggers connected on sucess and disconnected on failure
-        */
-        void login(QUrl url, QString firstName, QString lastName, QString passord );
-
+        void login(QUrl url, QString firstName, QString lastName, QString password );
     signals:
         void connected();
         void disconnected( QNetworkReply::NetworkError code );
 
+
     private slots:
-        void httpLoginFinished();
+        void rpcRequestFinished();
+
     private:
         QUrl url;
         QString firstName;
         QString lastName;
         QString password;
 
-        QNetworkAccessManager http;
+
+        QString session_id;
+        QString agent_id;
+
+        QHash<QString,QUrl> caps;
+
+        QxtXmlRpcClient rpc;
         SessionState m_state;
+
+        Circuit circuit;
     };
 };
 

@@ -3,12 +3,15 @@ TARGET =
 DEPENDPATH += .
 INCLUDEPATH += .
 
-INCLUDEPATH += /usr/include/QxtCore/
-LIBS +=  -lQxtCore
+INCLUDEPATH += /usr/include/QxtCore/ /usr/include/QxtNetwork
+LIBS +=  -lQxtCore -lQxtNetwork
+
+OBJECTS_DIR=.obj
+MOC_DIR=.obj
 
 # Input
-HEADERS += RpcCallWriter.hpp Session.hpp
-SOURCES += main.cpp RpcCallWriter.cpp Session.cpp
+HEADERS +=          Session.hpp Circuit.hpp
+SOURCES += main.cpp Session.cpp Circuit.cpp
 
 
 QT=core network
