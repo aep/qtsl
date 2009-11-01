@@ -1,0 +1,15 @@
+TEMPLATE = app
+TARGET = 
+DEPENDPATH += .
+INCLUDEPATH += .
+
+HEADERS = gen.h
+SOURCES =gen.cpp
+
+LEXSOURCES += yy.l
+YACCSOURCES += yy.y
+
+OBJECTS_DIR=.obj
+MOC_DIR=.obj
+
+QT=core
