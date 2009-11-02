@@ -96,7 +96,7 @@ void Session::rpcRequestFinished(){
             caps["seed_capability"]=r["seed_capability"].toString();
 
             m_state=ConnectingCircuit;
-            circuit.connect(r["sim_ip"].toString(),r["sim_port"].toInt(),r["circuit_code"].toUInt(),r["session_id"].toString());
+            circuit.connect(r["sim_ip"].toString(),r["sim_port"].toInt(),r["circuit_code"].toUInt(),r["session_id"].toString(),r["agent_id"].toString());
         }
 
     } else{
