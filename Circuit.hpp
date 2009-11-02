@@ -31,7 +31,7 @@ namespace qtsl{
         void connect(QString host,int port,quint32 circuit_code, QUuid session_id, QUuid agent_id);
 
         template <typename M>
-        void sendMessage(const M & message,bool reliable=true){
+        void sendMessage(const M & message,bool reliable=false){
             QByteArray d;
             QDataStream s(&d,QIODevice::WriteOnly);
             if(M::byte==udp::Low){
@@ -52,11 +52,12 @@ namespace qtsl{
             sendMessageData(d,reliable);
         }
 
-        void sendMessageData(const QByteArray & message,bool reliable=true, quint32 resendSeq=0);
+        void sendMessageData(const QByteArray & message,bool reliable=false, uint resent=0);
 
     signals:
         void connected();
         void disconnected(DisconnectReason);
+        void message(quint32 type,udp::UdpMessage * msg);
 
     private slots:
         void socketReadyRead();

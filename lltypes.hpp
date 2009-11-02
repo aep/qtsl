@@ -1,6 +1,7 @@
 #include <QUuid>
 #include <QDataStream>
 #include <QHostAddress>
+#include <cassert>
 namespace lltypes{
 
 
@@ -19,58 +20,57 @@ namespace lltypes{
 
 
     template <quint32 PrefixBytes>
-    class Variable  {
+    class Variable;
+
+    template <>
+    class Variable<1>  : public QByteArray{
     public:
-        inline Variable():length(0),data(0){
-        }
-        inline ~Variable(){
-            if(data)
-                delete [] data;
-        }
-        quint32 length;
-        char * data;
+        typedef quint8 SizeType;
+    };
+
+    template <>
+    class Variable<2>  : public QByteArray{
+    public:
+        typedef quint16 SizeType;
     };
 
     template <quint32 PrefixBytes>
     inline QDataStream & operator<< (QDataStream& out, const Variable<PrefixBytes>& o){
-        out<<o.length;
-        out.writeRawData(o.data,o.length);
+        out<<(typename Variable<PrefixBytes>::SizeType)o.size();
+        out.writeRawData(o.data(),o.size());
         return out;
     }
 
     template <quint32 PrefixBytes>
     inline QDataStream & operator>> (QDataStream& in, Variable<PrefixBytes>& o){
-        if(o.data)
-            delete [] o.data;
-        in>>o.length;
-        o.data= new char [o.length];
-        in.readRawData(o.data,o.length);
+        typename Variable<PrefixBytes>::SizeType size;
+        in>>size;
+        o.resize(size);
+        in.readRawData(o.data(),size);
         return in;
     }
 
 
 
     template <quint32 Bytes>
-    class Fixed  {
+    class Fixed  : public QByteArray {
     public:
-        inline Fixed():data(new char[Bytes]){
+        inline Fixed(){
+            resize(Bytes);
         }
         inline ~Fixed(){
-            if(data)
-                delete [] data;
         }
-        char * data;
     };
 
     template <quint32 Bytes>
     inline QDataStream & operator<< (QDataStream& out, const Fixed<Bytes>& o){
-        out.writeRawData(o.data,Bytes);
+        out.writeRawData(o.data(),Bytes);
         return out;
     }
 
     template <quint32 Bytes>
     inline QDataStream & operator>> (QDataStream& in, Fixed<Bytes>& o){
-        in.readRawData(o.data,Bytes);
+        in.readRawData(o.data(),Bytes);
         return in;
     }
 
