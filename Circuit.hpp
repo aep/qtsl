@@ -28,7 +28,7 @@ namespace qtsl{
 
         Circuit(QObject * parent=0);
 
-        void connect(QString host,int port,quint32 circuit_code, QUuid session_id);
+        void connect(QString host,int port,quint32 circuit_code, QUuid session_id, QUuid agent_id);
 
         template <typename M>
         void sendMessage(const M & message,bool reliable=true){
@@ -68,6 +68,7 @@ namespace qtsl{
         QString port;
         quint32 circuit_code;
         QUuid session_id;
+        QUuid agent_id;
 
         quint64 sequenceOut;
 

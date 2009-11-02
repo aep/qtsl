@@ -27,11 +27,12 @@ Circuit::Circuit(QObject * parent)
     QObject::connect(&socket,SIGNAL(error( QAbstractSocket::SocketError )),this,SLOT(socketError( QAbstractSocket::SocketError )));
 }
 
-void Circuit::connect(QString host,int port,quint32 circuit_code,QUuid session_id){
+void Circuit::connect(QString host,int port,quint32 circuit_code,QUuid session_id,QUuid agent_id){
     this->host=host;
     this->port=port;
     this->circuit_code=circuit_code;
     this->session_id=session_id;
+    this->agent_id=agent_id;
     this->sequenceOut=1;
     socket.connectToHost(host,port);
     timerId=startTimer(1000);
@@ -96,7 +97,7 @@ void Circuit::socketStateChanged ( QAbstractSocket::SocketState socketState){
         UseCircuitCodeMessage m;
         m.CircuitCode.Code=this->circuit_code;
         m.CircuitCode.SessionID=this->session_id;
-        m.CircuitCode.ID=this->session_id;
+        m.CircuitCode.ID=this->agent_id;
         sendMessage(m,ReliableMessage);
     }
 }
