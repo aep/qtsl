@@ -1,6 +1,7 @@
 #include "Circuit.hpp"
 #include <QtEndian>
 #include <QDebug>
+#include <cassert>
 
 using namespace qtsl;
 using namespace udp;
@@ -10,12 +11,13 @@ QByteArray zeroDecode(QByteArray in){
     QByteArray ret;
     for(int i=0;i<in.length();i++){
         if((char)in[i]==0){
-            char t=in[i+1];
+            char t=in[++i];
             while(t--){
                 ret.append((char)0);
             }
+        }else {
+            ret.append(in[i]);
         }
-        ret.append(in[i]);
     }
     return ret;
 }
@@ -39,56 +41,68 @@ void Circuit::connect(QString host,int port,quint32 circuit_code,QUuid session_i
 }
 
 void Circuit::socketReadyRead(){
-    qDebug()<<"[Circuit] Incomming Message with size "<<socket.pendingDatagramSize();
 
     QByteArray d=socket.read(socket.pendingDatagramSize());
 
     MessageFlags f=(MessageFlags)*d.data();
-    quint32 sequence=*((quint32*)(d.data()+1));
+    quint32 sequence=qFromBigEndian(*((quint32*)(d.data()+1)));
     quint8 extraheaderlen=*(d.data()+5);
     d=d.mid(6+extraheaderlen);
 
-    if (f &  ZeroencodedMessage){
-        d=zeroDecode(d);
-    }
+
     if (f &  ReliableMessage){
         //TODO:  maybe should attach those to other messages instead
         PacketAckMessage m;
         PacketAckMessage::PacketsBlock b;
         b.ID=sequence;
         m.Packets<<b;
-        sendMessage(m,NoMessageFlags);
+        sendMessage(m);
     }
 
-    quint8  * data8 =(quint8 *)d.data();
-    quint16 * data16=(quint16*)data8;
-    quint32 * data32=(quint32*)data8;
-
-    if(qFromBigEndian(data32[0])==PacketAckMessage::id){
-        PacketAckMessage ack;
-        d=d.mid(4);
-        QDataStream s(&d,QIODevice::ReadOnly);
-        s>>ack;
-        for(int i=0;i<ack.Packets.size();i++){
-            qDebug()<<"[Circuit] Ack " <<ack.Packets[i].ID;
-            delete queue.take(ack.Packets[i].ID);
+    if (f &  AckAppendedMessage){
+        quint8 acks=d[d.size()-1];
+        quint32 n=d.size()-2;
+        for(qint8 i=0;i<acks;i++){
+            char x[4];
+            x[3]=d[n--];
+            x[2]=d[n--];
+            x[1]=d[n--];
+            x[0]=d[n--];
+            quint32 id=qFromBigEndian(*(quint32*)x);
+            delete  queue.take(id);
         }
-    } else {
-
-        if (data8[0]==255){
-            if (data8[1]==255){
-                if (data8[2]==255){
-                    qDebug()<<"[Circuit] Fixed"<<qFromBigEndian(data32[0]);
-                }else{
-                    qDebug()<<"[Circuit] Low"<<data16[1];
-                }
-            }else{
-                qDebug()<<"[Circuit] Medium"<<data8[1];
-            }
-        }else{
-            qDebug()<<"[Circuit] High"<<data8[0];
-        }
+        d=d.left(n+1);
     }
+
+    if (f &  ZeroencodedMessage){
+        d=zeroDecode(d);
+    }
+    UdpMessage * msg=qtsl::udp::fromBytes(d);
+    assert(msg!=0);
+
+    if(d.size())
+        qDebug()<<"[Circuit] warning: "<<d.size()<<" bytes left after decoding message. "<<d.toHex();
+
+
+
+    qDebug()<<"[Circuit]"<<qtsl::udp::typeName(msg->type);
+
+    if(msg->type==PacketAckType){
+        PacketAckMessage * ack=static_cast<PacketAckMessage *>(msg);
+        for(int i=0;i<ack->Packets.size();i++){
+            qDebug()<<"[Circuit] Ack "<<ack->Packets[i].ID;
+            delete queue.take(ack->Packets[i].ID);
+        }
+    }else if(msg->type==StartPingCheckType){
+        StartPingCheckMessage * ping=static_cast<StartPingCheckMessage *>(msg);
+        CompletePingCheckMessage pong;
+        pong.PingID.PingID=ping->PingID.PingID;
+        sendMessage(pong);
+    }else{
+    }
+
+    delete msg;
+
 }
 
 void Circuit::socketStateChanged ( QAbstractSocket::SocketState socketState){
@@ -98,7 +112,13 @@ void Circuit::socketStateChanged ( QAbstractSocket::SocketState socketState){
         m.CircuitCode.Code=this->circuit_code;
         m.CircuitCode.SessionID=this->session_id;
         m.CircuitCode.ID=this->agent_id;
-        sendMessage(m,ReliableMessage);
+        sendMessage(m,true);
+
+        CompleteAgentMovementMessage c;
+        c.AgentData.CircuitCode=this->circuit_code;
+        c.AgentData.SessionID=this->session_id;
+        c.AgentData.AgentID=this->agent_id;
+        sendMessage(c,true);
     }
 }
 
@@ -106,27 +126,22 @@ void Circuit::socketError( QAbstractSocket::SocketError socketError ){
     qDebug()<<"[Circuit] error connecting to  "<<this->host<<":"<<this->port<<"  "<<socketError;
 }
 
-void Circuit::sendMessageData(const QByteArray & message,bool reliable,quint32 resendSeq){
+void Circuit::sendMessageData(const QByteArray & message,bool reliable,uint resent){
     QByteArray d;
     QDataStream o(&d,QIODevice::WriteOnly);
     int flags=0;
-    if(reliable && (resendSeq==0)){
+    if(reliable ){
         flags |= ReliableMessage;
-        QueuedMessage *q=new QueuedMessage();
-        q->payload=message;
-        q->iterationsStuck=0;
-        queue[this->sequenceOut]=q;
-    }
-    if(resendSeq){
-        flags |= ResentMessage;
+        QueuedMessage *m =new QueuedMessage();
+        m->payload=message;
+        m->iterationsStuck=resent;
+        queue[this->sequenceOut]=m;
+        if (resent!=0){
+            flags |= ResentMessage;
+        }
     }
     o<<(quint8)flags;
-
-    if(resendSeq){
-        o<<resendSeq;
-    }else {
-        o<<(quint32)this->sequenceOut++;
-    }
+    o<<(quint32)this->sequenceOut++;
     o<<(quint8)0;  //extra
     d.append(message);
     socket.write(d);
@@ -134,12 +149,12 @@ void Circuit::sendMessageData(const QByteArray & message,bool reliable,quint32 r
 
 void Circuit::timerEvent ( QTimerEvent * ){
     foreach(quint32 i,queue.keys()){
-        queue[i]->iterationsStuck+=1;
         if(queue[i]->iterationsStuck>10){
-            qDebug()<<"[Circuit] queue stuck";
+            qDebug("[Circuit] no ack in 10 seconds.   queue  is stuck <<<  ");
             killTimer(timerId);
             emit disconnected(Timeout);
         }
-        sendMessageData(queue[i]->payload,true,i);
+        sendMessageData(queue[i]->payload,true,queue[i]->iterationsStuck);
+        delete queue.take(i);
     }
 }
