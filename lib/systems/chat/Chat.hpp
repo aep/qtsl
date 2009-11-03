@@ -15,15 +15,17 @@ namespace qtsl{
                 AvatarSender,
                 ObjectSender
             };
-            enum Volume{
-                WhisperVolume,
-                NormalVolume,
-                ShoutVolume,
-                SpeechVolume
+            enum ChatType{
+                WhisperVolume=0,
+                NormalVolume=1,
+                ShoutVolume=2,
+                SpeechVolume=3,
+                StartTyping=4,
+                StopTyping=5
             };
             SenderType senderType;
             QUuid source;
-            Volume volume;
+            ChatType chatType;
             QString message;
             QString fromName;
             QUuid owner;
@@ -31,9 +33,9 @@ namespace qtsl{
         };
 
     public slots:
-        void sendSimulatorMessage(QString message, SimulatorMessage::Volume volume=SimulatorMessage::NormalVolume);
+        void sendSimulatorMessage(QString message, qtsl::Chat::SimulatorMessage::ChatType volume);
     signals:
-        void simulatorMessage(const SimulatorMessage & message);
+        void simulatorMessage(const qtsl::Chat::SimulatorMessage & message);
 
 
     private slots:

@@ -1,16 +1,15 @@
-#include <QCoreApplication>
-#include "Session.hpp"
-#include "Avatar.hpp"
-#include "Chat.hpp"
+#include <QApplication>
+#include "mainwindow.hpp"
 
 int main (int argc, char ** argv){
-    QCoreApplication app(argc,argv);
+    if(argc<5){
+        qDebug("usage: ./chat http://slserver:9000/ First Last Secret");
+        return 2;
+    }
+    QApplication app(argc,argv);
 
-    qtsl::Session session;
-    session.login(QUrl(argv[1]),argv[2],argv[3],argv[4]);
-
-    qtsl::Avatar avatar(&session);
-    qtsl::Chat chat(&session);
+    MainWindow win;
+    win.show();
 
     return app.exec();
 }

@@ -12,13 +12,13 @@ Chat::Chat(Session * s)
 }
 
 
-void Chat::sendSimulatorMessage(QString message, SimulatorMessage::Volume volume){
+void Chat::sendSimulatorMessage(QString message, SimulatorMessage::ChatType chattype){
     if(!simulator)
         return;
     udp::ChatFromViewerMessage msg;
     msg.AgentData.AgentID=session->agentId();
     msg.AgentData.SessionID=session->sessionId();
-    msg.ChatData.Type=0;
+    msg.ChatData.Type=chattype;
     msg.ChatData.Channel=0;
     msg.ChatData.Message.data=(message.toUtf8());
     simulator->sendMessage(msg);
@@ -37,10 +37,16 @@ void Chat::udpMessageHandler(qtsl::udp::UdpMessage * m){
         udp::ChatFromSimulatorMessage * message= static_cast<udp::ChatFromSimulatorMessage *>(m);
         SimulatorMessage msg;
 
+
         qDebug()<<"[Chat] SourceType was"<<message->ChatData.SourceType;
         msg.senderType=SimulatorMessage::AvatarSender;
-        qDebug()<<"[Chat] ChatType was"<<message->ChatData.ChatType;
-        msg.volume=SimulatorMessage::NormalVolume;
+
+        if(message->ChatData.ChatType <= 5){
+            msg.chatType=(SimulatorMessage::ChatType)message->ChatData.ChatType;
+        }else{
+            qDebug()<<"[Chat] FIXME ChatType was out of bounds: "<<message->ChatData.ChatType;
+            msg.chatType=SimulatorMessage::NormalVolume;
+        }
 
         msg.source=message->ChatData.SourceID;
         msg.owner=message->ChatData.OwnerID;

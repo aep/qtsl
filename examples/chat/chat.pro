@@ -10,6 +10,8 @@ INCLUDEPATH += . \
 
 DEPENDPATH = INCLUDEPATH
 
-QT=core network
+QT=core network gui
 
-SOURCES += main.cpp
+HEADERS += mainwindow.hpp
+FORMS += mainwindow.ui
+SOURCES += main.cpp mainwindow.cpp
