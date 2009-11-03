@@ -13,7 +13,7 @@ using namespace qtsl;
 Session::Session(QObject * parent)
  :QObject(parent)
  ,m_state(Disconnected){
-
+    connect(&circuit,SIGNAL(message(udp::UdpMessage*)),this,SLOT(message(udp::UdpMessage*)));
 }
 
 
@@ -105,4 +105,9 @@ void Session::rpcRequestFinished(){
         qDebug("Connection not successful: %i",reply->error());
     }
     reply->deleteLater();
+}
+
+
+
+void Session::message(udp::UdpMessage *){
 }

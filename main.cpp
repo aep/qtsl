@@ -3,7 +3,11 @@
 
 #include "Session.hpp"
 
-
+class MyChatClient : public QObject{
+Q_OBJECT
+public slots:
+    void chatMessage(){}
+};
 
 int main (int argc, char ** argv){
     QCoreApplication app(argc,argv);
@@ -13,3 +17,7 @@ int main (int argc, char ** argv){
 
     return app.exec();
 }
+
+
+
+#include "main.moc"

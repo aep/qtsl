@@ -57,7 +57,7 @@ namespace qtsl{
     signals:
         void connected();
         void disconnected(DisconnectReason);
-        void message(quint32 type,udp::UdpMessage * msg);
+        void message(udp::UdpMessage * msg);
 
     private slots:
         void socketReadyRead();
