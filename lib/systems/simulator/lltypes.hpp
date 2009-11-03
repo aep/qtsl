@@ -23,21 +23,24 @@ namespace lltypes{
     class Variable;
 
     template <>
-    class Variable<1>  : public QByteArray{
+    class Variable<1> {
     public:
+        QByteArray data;
         typedef quint8 SizeType;
     };
 
     template <>
-    class Variable<2>  : public QByteArray{
+    class Variable<2> {
     public:
+        QByteArray data;
         typedef quint16 SizeType;
     };
 
     template <quint32 PrefixBytes>
     inline QDataStream & operator<< (QDataStream& out, const Variable<PrefixBytes>& o){
-        out<<(typename Variable<PrefixBytes>::SizeType)o.size();
-        out.writeRawData(o.data(),o.size());
+        typename Variable<PrefixBytes>::SizeType size =  (typename Variable<PrefixBytes>::SizeType)o.data.size();
+        out<<size;
+        out.writeRawData(o.data.data(),size);
         return out;
     }
 
@@ -45,18 +48,19 @@ namespace lltypes{
     inline QDataStream & operator>> (QDataStream& in, Variable<PrefixBytes>& o){
         typename Variable<PrefixBytes>::SizeType size;
         in>>size;
-        o.resize(size);
-        in.readRawData(o.data(),size);
+        o.data.resize(size);
+        in.readRawData(o.data.data(),size);
         return in;
     }
 
 
 
     template <quint32 Bytes>
-    class Fixed  : public QByteArray {
+    class Fixed  {
     public:
+        QByteArray data;
         inline Fixed(){
-            resize(Bytes);
+            data.resize(Bytes);
         }
         inline ~Fixed(){
         }
@@ -64,13 +68,13 @@ namespace lltypes{
 
     template <quint32 Bytes>
     inline QDataStream & operator<< (QDataStream& out, const Fixed<Bytes>& o){
-        out.writeRawData(o.data(),Bytes);
+        out.writeRawData(o.data.data(),Bytes);
         return out;
     }
 
     template <quint32 Bytes>
     inline QDataStream & operator>> (QDataStream& in, Fixed<Bytes>& o){
-        in.readRawData(o.data(),Bytes);
+        in.readRawData(o.data.data(),Bytes);
         return in;
     }
 
