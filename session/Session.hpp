@@ -10,6 +10,9 @@
 #include "Circuit.hpp"
 
 namespace qtsl{
+    namespace udp{
+        struct UdpMessage;
+    };
 
     class Session : public QObject {
     Q_OBJECT
@@ -33,6 +36,7 @@ namespace qtsl{
 
     private slots:
         void rpcRequestFinished();
+        void message(udp::UdpMessage *);
 
     private:
         QUrl url;

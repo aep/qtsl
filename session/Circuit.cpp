@@ -99,6 +99,7 @@ void Circuit::socketReadyRead(){
         pong.PingID.PingID=ping->PingID.PingID;
         sendMessage(pong);
     }else{
+        emit message(msg);
     }
 
     delete msg;
