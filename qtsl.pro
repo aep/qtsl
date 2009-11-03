@@ -1,8 +1,9 @@
 TEMPLATE = app
 TARGET = 
-DEPENDPATH += . session session/udp
-INCLUDEPATH += . session session/udp
+DEPENDPATH += . 
+INCLUDEPATH += . 
 include (session/session.pri)
+include (chat/chat.pri)
 SOURCES += main.cpp
 
 OBJECTS_DIR=.obj
