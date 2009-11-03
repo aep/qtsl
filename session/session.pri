@@ -1,18 +1,18 @@
-INCLUDEPATH += /usr/include/QxtCore/ /usr/include/QxtNetwork
-LIBS +=  -lQxtCore -lQxtNetwork
+DEPENDPATH += session session/udp session/qxtxmlrpc
+INCLUDEPATH += session session/udp session/qxtxmlrpc
 
 HEADERS += session/Session.hpp \
 	   session/Circuit.hpp \
 	   session/udp/pkg.hpp \
-           session/qxtrpc/qxtglobal.h \
-           session/qxtrpc/qxtxmlrpc_p.h \
-           session/qxtrpc/qxtxmlrpccall.h \
-           session/qxtrpc/qxtxmlrpcclient.h 
+           session/qxtxmlrpc/qxtglobal.h \
+           session/qxtxmlrpc/qxtxmlrpc_p.h \
+           session/qxtxmlrpc/qxtxmlrpccall.h \
+           session/qxtxmlrpc/qxtxmlrpcclient.h 
 
 SOURCES += session/Session.cpp \
 	   session/Circuit.cpp \
            session/udp/pkg.cpp \
-           session/qxtrpc/qxtxmlrpc_p.cpp \
-           session/qxtrpc/qxtxmlrpccall.cpp \
-           session/qxtrpc/qxtxmlrpcclient.cpp 
+           session/qxtxmlrpc/qxtxmlrpc_p.cpp \
+           session/qxtxmlrpc/qxtxmlrpccall.cpp \
+           session/qxtxmlrpc/qxtxmlrpcclient.cpp 
 
