@@ -52,10 +52,10 @@ void Session::login(QUrl url, QString firstName, QString lastName, QString passw
     }
     m_state=Authenticating;
 
-    this->url=url;
-    this->firstName=firstName;
-    this->lastName=lastName;
-    this->password=password;
+    this->d_url=url;
+    this->d_firstName=firstName;
+    this->d_lastName=lastName;
+    this->d_password=password;
 
     rpc.setServiceUrl(url);
 
@@ -114,7 +114,7 @@ void Session::rpcRequestFinished(){
                 if((r["reason"].toString()=="presence") && (--authRetryLeft>0)){
                     int authRetryLeft_=authRetryLeft;
                     qDebug("[LOGIN] server claims we are logged in,  try one more time");
-                    login(this->url, this->firstName, this->lastName, this->password );
+                    login(this->d_url, this->d_firstName, this->d_lastName, this->d_password );
                     authRetryLeft=authRetryLeft_; //login resets it
                 } else {
                     emit disconnected(AuthenticationFailed);
@@ -122,8 +122,8 @@ void Session::rpcRequestFinished(){
                 }
             } else {
                 qDebug("[LOGIN] success");
-                session_id=r["session_id"].toString();
-                agent_id=r["agent_id"].toString();
+                d_session_id=r["session_id"].toString();
+                d_agent_id=r["agent_id"].toString();
                 caps["seed_capability"]=r["seed_capability"].toString();
 
                 m_state=Teleporting;

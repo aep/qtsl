@@ -13,8 +13,8 @@ Avatar::Avatar(Session * s)
 void Avatar::d_teleportComplete(Simulator *  target){
     udp::CompleteAgentMovementMessage c;
     c.AgentData.CircuitCode=target->circuitCode();
-    c.AgentData.SessionID=session->session_id;
-    c.AgentData.AgentID=session->agent_id;
+    c.AgentData.SessionID=session->sessionId();
+    c.AgentData.AgentID=session->agentId();
     target->sendMessage(c,true);
 }
 

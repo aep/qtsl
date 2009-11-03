@@ -1,12 +1,13 @@
 CONFIG+=debug
-TEMPLATE = app
-TARGET = 
+TEMPLATE = lib
+CONFIG+=staticlib
+TARGET = qtsl
 DEPENDPATH += . 
 INCLUDEPATH += . 
 include (systems/session/session.pri)
 include (systems/simulator/simulator.pri)
 include (systems/avatar/avatar.pri)
-SOURCES += main.cpp
+include (systems/chat/chat.pri)
 
 OBJECTS_DIR=.obj
 MOC_DIR=.obj

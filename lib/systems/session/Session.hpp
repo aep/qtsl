@@ -45,16 +45,12 @@ namespace qtsl{
             *simSouthWest,
             *simTarget;
 
-        //login parameters
-        QUrl url;
-        QString firstName;
-        QString lastName;
-        QString password;
-
-        //session parameters
-        QUuid session_id;
-        QUuid agent_id;
-
+        inline QUuid sessionId(){
+            return d_session_id;
+        }
+        inline QUuid agentId(){
+            return d_agent_id;
+        }
 
     public slots:
         void login(QUrl url, QString firstName, QString lastName, QString password);
@@ -74,12 +70,23 @@ namespace qtsl{
     private:
         SessionState m_state;
 
+        //login parameters
+        QUrl d_url;
+        QString d_firstName;
+        QString d_lastName;
+        QString d_password;
+
+        //session parameters
+        QUuid d_session_id;
+        QUuid d_agent_id;
+
         //xmlrpc
         int authRetryLeft;
         QxtXmlRpcClient rpc;
 
         //caps
         QMap<QString,QUrl> caps;
+
     };
 };
 
