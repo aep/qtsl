@@ -1,4 +1,4 @@
-#include "Circuit.hpp"
+#include "Simulator.hpp"
 #include <QtEndian>
 #include <QDebug>
 #include <cassert>
@@ -6,6 +6,13 @@
 using namespace qtsl;
 using namespace udp;
 
+enum MessageFlags{
+    NoMessageFlags = 0x0,
+    AckAppendedMessage = 0x10,
+    ResentMessage =0x20,
+    ReliableMessage = 0x40,
+    ZeroencodedMessage = 0x80
+};
 
 QByteArray zeroDecode(QByteArray in){
     QByteArray ret;
@@ -22,27 +29,34 @@ QByteArray zeroDecode(QByteArray in){
     return ret;
 }
 
-Circuit::Circuit(QObject * parent)
-    :QObject(parent){
+Simulator::Simulator(Session * s)
+    :QObject()
+    ,m_state(Disconnected)
+    ,session(s){
     QObject::connect(&socket,SIGNAL(readyRead()),this,SLOT(socketReadyRead()));
     QObject::connect(&socket,SIGNAL(stateChanged ( QAbstractSocket::SocketState)),this,SLOT(socketStateChanged ( QAbstractSocket::SocketState)));
     QObject::connect(&socket,SIGNAL(error( QAbstractSocket::SocketError )),this,SLOT(socketError( QAbstractSocket::SocketError )));
 }
 
-void Circuit::connect(QString host,int port,quint32 circuit_code,QUuid session_id,QUuid agent_id){
+void Simulator::connect(QString host,int port,quint32 circuit_code,QUuid session_id,QUuid agent_id){
     this->host=host;
     this->port=port;
     this->circuit_code=circuit_code;
     this->session_id=session_id;
     this->agent_id=agent_id;
     this->sequenceOut=1;
+    m_state=Connecting;
     socket.connectToHost(host,port);
     timerId=startTimer(1000);
 }
 
-void Circuit::socketReadyRead(){
-
+void Simulator::socketReadyRead(){
     QByteArray d=socket.read(socket.pendingDatagramSize());
+
+    if(m_state==Connecting){
+        m_state=Connected;
+        emit connected();
+    }
 
     MessageFlags f=(MessageFlags)*d.data();
     quint32 sequence=qFromBigEndian(*((quint32*)(d.data()+1)));
@@ -99,63 +113,64 @@ void Circuit::socketReadyRead(){
         pong.PingID.PingID=ping->PingID.PingID;
         sendMessage(pong);
     }else{
-        emit message(msg);
+        foreach(UdpMessageHandlerInterface * i,receivers)
+            i->udpMessageHandler(msg);
     }
 
     delete msg;
 
 }
 
-void Circuit::socketStateChanged ( QAbstractSocket::SocketState socketState){
-    qDebug()<<"[Circuit] "<<socketState;
-    if(socketState== QAbstractSocket::ConnectedState){
+void Simulator::socketStateChanged ( QAbstractSocket::SocketState socketState){
+    if(socketState== QAbstractSocket::ConnectedState && m_state==Connecting ){
         UseCircuitCodeMessage m;
         m.CircuitCode.Code=this->circuit_code;
         m.CircuitCode.SessionID=this->session_id;
         m.CircuitCode.ID=this->agent_id;
         sendMessage(m,true);
-
-        CompleteAgentMovementMessage c;
-        c.AgentData.CircuitCode=this->circuit_code;
-        c.AgentData.SessionID=this->session_id;
-        c.AgentData.AgentID=this->agent_id;
-        sendMessage(c,true);
+    }else if(socketState== QAbstractSocket::UnconnectedState){
+        if (m_state!=Disconnecting){
+            emit disconnected(NetworkError);
+        }
     }
 }
 
-void Circuit::socketError( QAbstractSocket::SocketError socketError ){
+void Simulator::socketError( QAbstractSocket::SocketError socketError ){
     qDebug()<<"[Circuit] error connecting to  "<<this->host<<":"<<this->port<<"  "<<socketError;
 }
 
-void Circuit::sendMessageData(const QByteArray & message,bool reliable,uint resent){
+quint32 Simulator::sendMessageData(const QByteArray & message,bool reliable,bool resent){
     QByteArray d;
     QDataStream o(&d,QIODevice::WriteOnly);
     int flags=0;
-    if(reliable ){
+    if(reliable && !resent){
         flags |= ReliableMessage;
         QueuedMessage *m =new QueuedMessage();
         m->payload=message;
-        m->iterationsStuck=resent;
+        m->iterationsStuck=0;
         queue[this->sequenceOut]=m;
-        if (resent!=0){
-            flags |= ResentMessage;
-        }
+    }
+    if (resent){
+        flags |= ReliableMessage;
+        flags |= ResentMessage;
     }
     o<<(quint8)flags;
-    o<<(quint32)this->sequenceOut++;
+    o<<(quint32)this->sequenceOut;
     o<<(quint8)0;  //extra
     d.append(message);
     socket.write(d);
+    return this->sequenceOut++;
 }
 
-void Circuit::timerEvent ( QTimerEvent * ){
+void Simulator::timerEvent ( QTimerEvent * ){
     foreach(quint32 i,queue.keys()){
         if(queue[i]->iterationsStuck>10){
             qDebug("[Circuit] no ack in 10 seconds.   queue  is stuck <<<  ");
             killTimer(timerId);
+            m_state=Disconnected;
             emit disconnected(Timeout);
         }
-        sendMessageData(queue[i]->payload,true,queue[i]->iterationsStuck);
-        delete queue.take(i);
+        queue[i]->iterationsStuck++;
+        queue[sendMessageData(queue[i]->payload,true,true)]=queue.take(i);
     }
 }
