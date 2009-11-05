@@ -8,6 +8,7 @@ include (systems/session/session.pri)
 include (systems/simulator/simulator.pri)
 include (systems/avatar/avatar.pri)
 include (systems/chat/chat.pri)
+include (systems/inventory/inventory.pri)
 
 OBJECTS_DIR=.obj
 MOC_DIR=.obj

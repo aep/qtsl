@@ -1,2 +1,2 @@
 TEMPLATE = subdirs
-SUBDIRS = lib examples/chat
+SUBDIRS = lib examples/chat examples/inventory

@@ -51,6 +51,9 @@ namespace qtsl{
         inline QUuid agentId(){
             return d_agent_id;
         }
+        inline QUuid inventoryRoot(){
+            return d_inventory_root;
+        }
 
     public slots:
         void login(QUrl url, QString firstName, QString lastName, QString password);
@@ -79,6 +82,7 @@ namespace qtsl{
         //session parameters
         QUuid d_session_id;
         QUuid d_agent_id;
+        QUuid d_inventory_root;
 
         //xmlrpc
         int authRetryLeft;
