@@ -124,7 +124,12 @@ void Session::rpcRequestFinished(){
                 qDebug("[LOGIN] success");
                 d_session_id=r["session_id"].toString();
                 d_agent_id=r["agent_id"].toString();
-                d_inventory_root=r["inventory-root"].toMap()["folder_id"].toString();
+                QVariantList inventoryrootl =r["inventory-root"].toList();
+                if(inventoryrootl.count()){
+                    d_inventory_root=inventoryrootl[0].toMap()["folder_id"].toString();
+                }else {
+                    qWarning("[Login] got no inventory root");
+                }
 
                 caps["seed_capability"]=r["seed_capability"].toString();
 
