@@ -3,8 +3,8 @@
 MainWindow::MainWindow()
  :QWidget()
  ,session()
- ,avatar(&session)
- ,chat(&session){
+ ,avatar(session)
+ ,chat(session){
     setupUi(this);
     connect(&chat,SIGNAL(simulatorMessage(const qtsl::Chat::SimulatorMessage & )),
             this,SLOT   (simulatorMessage(const qtsl::Chat::SimulatorMessage &)));
