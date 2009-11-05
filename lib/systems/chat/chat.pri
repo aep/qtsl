@@ -1,6 +1,6 @@
-DEPENDPATH += systems/chat
-INCLUDEPATH += systems/chat
+DEPENDPATH += $$PWD
+INCLUDEPATH += $$PWD
 
-HEADERS += systems/chat/Chat.hpp 
-SOURCES +=  systems/chat/Chat.cpp
+HEADERS += $$PWD/Chat.hpp 
+SOURCES += $$PWD/Chat.cpp
 

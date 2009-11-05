@@ -1,6 +1,6 @@
-DEPENDPATH += systems/avatar 
-INCLUDEPATH += systems/avatar
+DEPENDPATH += $$PWD
+INCLUDEPATH += $$PWD
 
-HEADERS += systems/avatar/Avatar.hpp 
-SOURCES +=  systems/avatar/Avatar.cpp
+HEADERS += $$PWD/Avatar.hpp 
+SOURCES += $$PWD/Avatar.cpp
 

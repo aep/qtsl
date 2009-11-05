@@ -1,15 +1,68 @@
 #include "Session.hpp"
-#include <QxtXmlRpcCall>
+#include <QHash>
 #include <QNetworkReply>
 #include <QNetworkRequest>
 #include <QCryptographicHash>
 #include <QStringList>
 #include <QCoreApplication>
-
+#include <QxtXmlRpcClient>
+#include <QxtXmlRpcCall>
 #include "Simulator.hpp"
 #include "pkg/pkg.hpp"
 
 using namespace qtsl;
+
+
+struct Session::Private{
+    Private(Session *s)
+        :pub(s)
+        ,m_state(Disconnected){
+    }
+    ~Private(){
+    }
+
+    Session * pub;
+
+    SessionState m_state;
+
+    //login parameters
+    QUrl d_url;
+    QString d_firstName;
+    QString d_lastName;
+    QString d_password;
+
+    //session parameters
+    QUuid d_session_id;
+    QUuid d_agent_id;
+    QUuid d_inventory_root;
+
+    //xmlrpc
+    int authRetryLeft;
+    QxtXmlRpcClient rpc;
+
+    //caps
+    QMap<QString,QUrl> caps;
+
+    void d_rpcRequestFinished();
+    void d_simulatorDisconnected(Simulator::DisconnectReason reason);
+    void d_simulatorConnected();
+
+};
+
+
+Session::SessionState Session::state() const{
+    return d->m_state;
+}
+QUuid Session::sessionId() const{
+    return d->d_session_id;
+}
+QUuid Session::agentId() const{
+    return d->d_agent_id;
+}
+QUuid Session::inventoryRoot() const{
+    return d->d_inventory_root;
+}
+
 
 Session::Session(QObject * parent)
  :QObject(parent)
@@ -23,7 +76,7 @@ Session::Session(QObject * parent)
  ,simSouthEast(0)
  ,simSouthWest(0)
  ,simTarget(0)
- ,m_state(Disconnected){
+ ,d(new Private(this)){
 }
 
 Session::~Session(){
@@ -47,19 +100,19 @@ Session::~Session(){
 
 void Session::login(QUrl url, QString firstName, QString lastName, QString password ){
 
-    if(m_state!=Disconnected){
+    if(d->m_state!=Disconnected){
         return;
     }
-    m_state=Authenticating;
+    d->m_state=Authenticating;
 
-    this->d_url=url;
-    this->d_firstName=firstName;
-    this->d_lastName=lastName;
-    this->d_password=password;
+    d->d_url=url;
+    d->d_firstName=firstName;
+    d->d_lastName=lastName;
+    d->d_password=password;
 
-    rpc.setServiceUrl(url);
+    d->rpc.setServiceUrl(url);
 
-    this->authRetryLeft=2;
+    d->authRetryLeft=2;
 
     QVariantMap st;
     st["mac"]="00:00:00:00:00:00";
@@ -93,16 +146,16 @@ void Session::login(QUrl url, QString firstName, QString lastName, QString passw
     st["passwd"]=QString::fromAscii("$1$"+QCryptographicHash::hash(password.toAscii(),QCryptographicHash::Md5).toHex());
     st["start"]="last";
 
-    QxtXmlRpcCall * response= rpc.call("login_to_simulator",(QVariantList()<<st));
-    this->connect(response,SIGNAL(finished()),SLOT(rpcRequestFinished()));
+    QxtXmlRpcCall * response= d->rpc.call("login_to_simulator",(QVariantList()<<st));
+    this->connect(response,SIGNAL(finished()),SLOT(d_rpcRequestFinished()));
 }
 
 void Session::logout(){
     //TODO
 }
 
-void Session::rpcRequestFinished(){
-    QxtXmlRpcCall* reply = qobject_cast<QxtXmlRpcCall*>(sender());
+void Session::Private::d_rpcRequestFinished(){
+    QxtXmlRpcCall* reply = qobject_cast<QxtXmlRpcCall*>(pub->sender());
 
     if(m_state==Authenticating){
         if(reply->error()==QNetworkReply::NoError){
@@ -114,10 +167,10 @@ void Session::rpcRequestFinished(){
                 if((r["reason"].toString()=="presence") && (--authRetryLeft>0)){
                     int authRetryLeft_=authRetryLeft;
                     qDebug("[LOGIN] server claims we are logged in,  try one more time");
-                    login(this->d_url, this->d_firstName, this->d_lastName, this->d_password );
+                    pub->login(this->d_url, this->d_firstName, this->d_lastName, this->d_password );
                     authRetryLeft=authRetryLeft_; //login resets it
                 } else {
-                    emit disconnected(AuthenticationFailed);
+                    emit pub->disconnected(AuthenticationFailed);
                     qDebug("[LOGIN] %s",qPrintable(r["message"].toString()));
                 }
             } else {
@@ -134,16 +187,16 @@ void Session::rpcRequestFinished(){
                 caps["seed_capability"]=r["seed_capability"].toString();
 
                 m_state=Teleporting;
-                simTarget=new Simulator(this);
-                connect(simTarget,SIGNAL(disconnected(Simulator::DisconnectReason)),this,SLOT(simulatorDisconnected(Simulator::DisconnectReason )));
-                connect(simTarget,SIGNAL(connected()),this,SLOT(simulatorConnected()));
-                emit teleporting(simTarget);
-                simTarget->connect(r["sim_ip"].toString(),r["sim_port"].toInt(),r["circuit_code"].toUInt(),r["session_id"].toString(),r["agent_id"].toString());
+                pub->simTarget=new Simulator(pub);
+                connect(pub->simTarget,SIGNAL(disconnected(Simulator::DisconnectReason)),pub,SLOT(d_simulatorDisconnected(Simulator::DisconnectReason )));
+                connect(pub->simTarget,SIGNAL(connected()),pub,SLOT(d_simulatorConnected()));
+                emit pub->teleporting(pub->simTarget);
+                pub->simTarget->connect(r["sim_ip"].toString(),r["sim_port"].toInt(),r["circuit_code"].toUInt(),r["session_id"].toString(),r["agent_id"].toString());
             }
 
         } else{
             m_state=Disconnected;
-            emit disconnected(NetworkError);
+            emit pub->disconnected(NetworkError);
             qDebug("Connection not successful: %i",reply->error());
         }
         reply->deleteLater();
@@ -154,19 +207,19 @@ void Session::rpcRequestFinished(){
 
 
 
-void Session::simulatorDisconnected(Simulator::DisconnectReason reason){
-    Simulator * sim=qobject_cast<Simulator*>(sender());
-    if(sim==simCurrent){
+void Session::Private::d_simulatorDisconnected(Simulator::DisconnectReason reason){
+    Simulator * sim=qobject_cast<Simulator*>(pub->sender());
+    if(sim==pub->simCurrent){
         qCritical("[Session] Current sim disconnected. Should propably teleport or something. For now i'm going to disconnect the session.");
-        emit disconnected(NetworkError);
-        simCurrent->deleteLater();
-        simCurrent=0;
-    }else if(sim==simTarget){
+        emit pub->disconnected(NetworkError);
+        pub->simCurrent->deleteLater();
+        pub->simCurrent=0;
+    }else if(sim==pub->simTarget){
         qWarning("[Session] Teleport failed");
-        emit teleportFailed(sim,reason);
-        if(simCurrent==0){
+        emit pub->teleportFailed(sim,reason);
+        if(pub->simCurrent==0){
             m_state=Disconnected;
-            emit disconnected(InitialTeleportFailed);
+            emit pub->disconnected(InitialTeleportFailed);
         }
         delete sim;
     } else {
@@ -174,19 +227,25 @@ void Session::simulatorDisconnected(Simulator::DisconnectReason reason){
     }
 }
 
-void Session::simulatorConnected(){
-    Simulator * sim=qobject_cast<Simulator*>(sender());
-    if(sim==simTarget || m_state==Teleporting){
+void Session::Private::d_simulatorConnected(){
+    Simulator * sim=qobject_cast<Simulator*>(pub->sender());
+    if(sim==pub->simTarget || m_state==Teleporting){
 
         //TODO: whats with the other regions?
-        if(simCurrent){
-            simCurrent->deleteLater();
-            simCurrent=0;
+        if(pub->simCurrent){
+            pub->simCurrent->deleteLater();
+            pub->simCurrent=0;
         }
-        simCurrent=simTarget;
-        simTarget=0;
-        emit teleportComplete(simCurrent);
+        pub->simCurrent=pub->simTarget;
+        pub->simTarget=0;
+        emit pub->teleportComplete(pub->simCurrent);
     } else {
     }
 }
+
+
+
+
+
+#include "moc_Session.cpp"
 

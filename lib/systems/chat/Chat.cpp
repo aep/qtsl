@@ -3,12 +3,12 @@
 
 using namespace qtsl;
 
-Chat::Chat(Session * s)
+Chat::Chat(Session & s)
     :QObject()
     ,UdpMessageHandlerInterface()
     ,simulator(0)
     ,session(s){
-    connect(session,SIGNAL(teleportComplete(Simulator*)),this,SLOT(d_teleportComplete(Simulator*)));
+    connect(&session,SIGNAL(teleportComplete(Simulator*)),this,SLOT(d_teleportComplete(Simulator*)));
 }
 
 
@@ -16,8 +16,8 @@ void Chat::sendSimulatorMessage(QString message, SimulatorMessage::ChatType chat
     if(!simulator)
         return;
     udp::ChatFromViewerMessage msg;
-    msg.AgentData.AgentID=session->agentId();
-    msg.AgentData.SessionID=session->sessionId();
+    msg.AgentData.AgentID=session.agentId();
+    msg.AgentData.SessionID=session.sessionId();
     msg.ChatData.Type=chattype;
     msg.ChatData.Channel=0;
     msg.ChatData.Message.data=(message.toUtf8());

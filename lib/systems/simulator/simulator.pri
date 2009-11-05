@@ -1,8 +1,8 @@
-DEPENDPATH += systems/simulator systems/simulator/udp 
-INCLUDEPATH += systems/simulator systems/simulator/udp 
+DEPENDPATH += $$PWD $$PWD/udp
+INCLUDEPATH += $$PWD $$PWD/udp 
 
-HEADERS += systems/simulator/Simulator.hpp \
-	       systems/simulator/pkg/pkg.hpp 
+HEADERS += $$PWD/Simulator.hpp \
+	       $$PWD/pkg/pkg.hpp 
 
-SOURCES += systems/simulator/Simulator.cpp \
-           systems/simulator/pkg/pkg.cpp
+SOURCES += $$PWD/Simulator.cpp \
+           $$PWD/pkg/pkg.cpp

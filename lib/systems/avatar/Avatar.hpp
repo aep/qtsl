@@ -7,13 +7,13 @@ namespace qtsl{
     class Avatar : public QObject{
         Q_OBJECT;
     public:
-        Avatar(Session * session);
+        Avatar(Session & session);
 
     private slots:
         void d_teleportComplete(Simulator *  target);
 
     private:
-        Session *  session;
+        Session & session;
     };
 };
 

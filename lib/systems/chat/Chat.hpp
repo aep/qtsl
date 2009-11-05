@@ -8,7 +8,7 @@ namespace qtsl{
     class Chat : public QObject, public UdpMessageHandlerInterface{
         Q_OBJECT;
     public:
-        Chat(Session * session);
+        Chat(Session & session);
 
         struct SimulatorMessage{
             enum SenderType{
@@ -43,7 +43,7 @@ namespace qtsl{
 
     private:
         Simulator *  simulator;
-        Session   *  session;
+        Session   &  session;
         virtual void udpMessageHandler(qtsl::udp::UdpMessage * message);
 
     };

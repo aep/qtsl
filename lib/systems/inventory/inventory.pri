@@ -1,6 +1,6 @@
-DEPENDPATH += systems/inventory
-INCLUDEPATH += systems/inventory
+DEPENDPATH += $$PWD
+INCLUDEPATH += $$PWD
 
-HEADERS += systems/inventory/Inventory.hpp
-SOURCES +=  systems/inventory/Inventory.cpp
+HEADERS += $$PWD/Inventory.hpp
+SOURCES += $$PWD/Inventory.cpp
 
