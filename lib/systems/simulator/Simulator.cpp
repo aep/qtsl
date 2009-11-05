@@ -32,7 +32,8 @@ QByteArray zeroDecode(QByteArray in){
 Simulator::Simulator(Session * s)
     :QObject()
     ,m_state(Disconnected)
-    ,session(s){
+    ,session(s)
+    ,lastSeen(0){
     QObject::connect(&socket,SIGNAL(readyRead()),this,SLOT(socketReadyRead()));
     QObject::connect(&socket,SIGNAL(stateChanged ( QAbstractSocket::SocketState)),this,SLOT(socketStateChanged ( QAbstractSocket::SocketState)));
     QObject::connect(&socket,SIGNAL(error( QAbstractSocket::SocketError )),this,SLOT(socketError( QAbstractSocket::SocketError )));
@@ -51,6 +52,7 @@ void Simulator::connect(QString host,int port,quint32 circuit_code,QUuid session
 }
 
 void Simulator::socketReadyRead(){
+    lastSeen=0;
     QByteArray d=socket.read(socket.pendingDatagramSize());
 
     if(m_state==Connecting){
@@ -83,6 +85,7 @@ void Simulator::socketReadyRead(){
             x[1]=d[n--];
             x[0]=d[n--];
             quint32 id=qFromBigEndian(*(quint32*)x);
+            qDebug()<<"[Circuit] Ack "<<id;
             delete  queue.take(id);
         }
         d=d.left(n+1);
@@ -139,7 +142,7 @@ void Simulator::socketError( QAbstractSocket::SocketError socketError ){
     qDebug()<<"[Circuit] error connecting to  "<<this->host<<":"<<this->port<<"  "<<socketError;
 }
 
-quint32 Simulator::sendMessageData(const QByteArray & message,bool reliable,bool resent){
+quint32 Simulator::sendMessageData(const QByteArray & message,bool reliable,quint32 resent){
     QByteArray d;
     QDataStream o(&d,QIODevice::WriteOnly);
     int flags=0;
@@ -155,7 +158,12 @@ quint32 Simulator::sendMessageData(const QByteArray & message,bool reliable,bool
         flags |= ResentMessage;
     }
     o<<(quint8)flags;
-    o<<(quint32)this->sequenceOut;
+
+    if (resent){
+        o<<resent;
+    }else{
+        o<<(quint32)this->sequenceOut;
+    }
     o<<(quint8)0;  //extra
     d.append(message);
     socket.write(d);
@@ -163,14 +171,15 @@ quint32 Simulator::sendMessageData(const QByteArray & message,bool reliable,bool
 }
 
 void Simulator::timerEvent ( QTimerEvent * ){
+    lastSeen++;
     foreach(quint32 i,queue.keys()){
-        if(queue[i]->iterationsStuck>10){
-            qDebug("[Circuit] no ack in 10 seconds.   queue  is stuck <<<  ");
+        if(queue[i]->iterationsStuck>10 && lastSeen > 10){
+            qDebug("[Circuit] queue is dead ");
             killTimer(timerId);
             m_state=Disconnected;
             emit disconnected(Timeout);
         }
         queue[i]->iterationsStuck++;
-        queue[sendMessageData(queue[i]->payload,true,true)]=queue.take(i);
+        sendMessageData(queue[i]->payload,true,i);
     }
 }

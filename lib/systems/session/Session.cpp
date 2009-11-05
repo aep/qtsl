@@ -124,6 +124,8 @@ void Session::rpcRequestFinished(){
                 qDebug("[LOGIN] success");
                 d_session_id=r["session_id"].toString();
                 d_agent_id=r["agent_id"].toString();
+                d_inventory_root=r["inventory-root"].toMap()["folder_id"].toString();
+
                 caps["seed_capability"]=r["seed_capability"].toString();
 
                 m_state=Teleporting;

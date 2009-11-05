@@ -83,6 +83,8 @@ namespace qtsl{
 
         quint64 sequenceOut;
 
+        uint lastSeen;
+
         struct QueuedMessage{
             QByteArray payload;
             quint8 iterationsStuck;
@@ -93,7 +95,7 @@ namespace qtsl{
 
         QList<UdpMessageHandlerInterface *> receivers;
 
-        quint32 sendMessageData(const QByteArray & message,bool reliable=false, bool resent=false);
+        quint32 sendMessageData(const QByteArray & message,bool reliable=false, quint32 resent=0);
     };
 };
 
